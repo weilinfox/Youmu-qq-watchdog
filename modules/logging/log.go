@@ -4,6 +4,7 @@ import (
 	"github.com/Logiase/MiraiGo-Template/config"
 	"github.com/Mrs4s/MiraiGo/client"
 	"github.com/Mrs4s/MiraiGo/message"
+	"strconv"
 	"sync"
 	"time"
 
@@ -30,7 +31,15 @@ func (m *logging) Init() {
 	// 初始化过程
 	// 在此处可以进行 Module 的初始化配置
 	// 如配置读取
-	watchList = config.GlobalConfig.GetIntSlice("watch.group-list")
+	watchStringList := config.GlobalConfig.GetStringSlice("watch.group-list")
+	for _, i := range watchStringList {
+		i64, e := strconv.ParseInt(i, 10, 64)
+		if e != nil {
+			logger.Warnf("Group Number " + i + " parse error: " + e.Error())
+			continue
+		}
+		watchList = append(watchList, i64)
+	}
 }
 
 func (m *logging) PostInit() {
@@ -68,15 +77,15 @@ var instance *logging
 var logger = utils.GetModuleLogger("internal.logging")
 
 var (
-	pokeCount int = 3
+	pokeCount = 3
 	pokeLast  int64
 
-	watchList []int
+	watchList []int64
 )
 
 func isWatchGroup(g int64) bool {
 	for _, i := range watchList {
-		if int64(i) == g {
+		if i == g {
 			return true
 		}
 	}

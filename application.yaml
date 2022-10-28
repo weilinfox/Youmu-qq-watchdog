@@ -1,4 +1,10 @@
 bot:
-  loginmethod: qrcode
+  login-method: common
   account: ""
   password: ""
+
+watch:
+  group-list:
+    - "10000000"
+  qq-list:
+    - "10000000"
