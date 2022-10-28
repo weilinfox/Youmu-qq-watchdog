@@ -37,6 +37,13 @@ var logger = logrus.WithField("bot", "internal")
 // 使用 config.GlobalConfig 初始化账号
 // 使用 ./device.json 初始化设备信息
 func Init() {
+
+	b, _ := utils.FileExist("./device.json")
+	if !b {
+		logger.Warnln("No device.json, generate device.json now.")
+		GenRandomDevice()
+	}
+
 	deviceJSONContent := utils.ReadFile("./device.json")
 	InitWithDeviceJSONContent(deviceJSONContent)
 }

@@ -1,10 +1,11 @@
 package logging
 
 import (
-	"sync"
-
+	"github.com/Logiase/MiraiGo-Template/config"
 	"github.com/Mrs4s/MiraiGo/client"
 	"github.com/Mrs4s/MiraiGo/message"
+	"sync"
+	"time"
 
 	"github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Logiase/MiraiGo-Template/utils"
@@ -29,6 +30,7 @@ func (m *logging) Init() {
 	// 初始化过程
 	// 在此处可以进行 Module 的初始化配置
 	// 如配置读取
+	watchList = config.GlobalConfig.GetIntSlice("watch.group-list")
 }
 
 func (m *logging) PostInit() {
@@ -65,14 +67,87 @@ var instance *logging
 
 var logger = utils.GetModuleLogger("internal.logging")
 
+var (
+	pokeCount int = 3
+	pokeLast  int64
+
+	watchList []int
+)
+
+func isWatchGroup(g int64) bool {
+	for _, i := range watchList {
+		if int64(i) == g {
+			return true
+		}
+	}
+	return false
+}
+
 func logGroupMessage(msg *message.GroupMessage) {
+	if !isWatchGroup(msg.GroupCode) {
+		return
+	}
+	name := msg.Sender.CardName
+	if name == "" {
+		name = msg.Sender.Nickname
+	}
 	logger.
-		WithField("from", "GroupMessage").
 		WithField("MessageID", msg.Id).
-		WithField("MessageIID", msg.InternalId).
-		WithField("GroupCode", msg.GroupCode).
-		WithField("SenderID", msg.Sender.Uin).
-		Info(msg.ToString())
+		Infof("[%s] %s: %s", msg.GroupName, name, msg.ToString())
+}
+
+func logGroupNotifyEvent(event client.INotifyEvent) {
+	switch e := event.(type) {
+	case *client.GroupPokeNotifyEvent:
+		if !isWatchGroup(e.GroupCode) {
+			return
+		}
+		group := bot.Instance.FindGroup(e.GroupCode)
+		sender := group.FindMember(e.Sender)
+		receiver := group.FindMember(e.Receiver)
+		senderName := sender.CardName
+		receiverName := receiver.CardName
+		if senderName == "" {
+			senderName = sender.Nickname
+		}
+		if receiverName == "" {
+			receiverName = receiver.Nickname
+		}
+		logger.Infof("[%s] %s 戳了戳 %s", group.Name, senderName, receiverName)
+
+		if e.Receiver == config.GlobalConfig.GetInt64("bot.account") {
+			// three auto poke per hour
+			if pokeCount >= 3 && time.Now().Unix()-pokeLast >= 60*60 {
+				pokeCount = 0
+				pokeLast = time.Now().Unix()
+			}
+			if pokeCount < 3 {
+				if group != nil {
+					member := group.FindMember(e.Sender)
+					member.Poke()
+					pokeCount++
+				}
+			}
+		}
+	}
+}
+
+func logGroupMuteEvent(event *client.GroupMuteEvent) {
+	if !isWatchGroup(event.GroupCode) {
+		return
+	}
+	group := bot.Instance.FindGroup(event.GroupCode)
+	target := group.FindMember(event.TargetUin)
+	targetName := target.CardName
+	operator := group.FindMember(event.OperatorUin)
+	operatorName := operator.CardName
+	if targetName == "" {
+		targetName = target.Nickname
+	}
+	if operatorName == "" {
+		operatorName = operator.Nickname
+	}
+	logger.Infof("[%s] %s 被 %s 禁言 %dmin 惹", group.Name, targetName, operatorName, event.Time)
 }
 
 func logPrivateMessage(msg *message.PrivateMessage) {
@@ -83,6 +158,9 @@ func logPrivateMessage(msg *message.PrivateMessage) {
 		WithField("SenderID", msg.Sender.Uin).
 		WithField("Target", msg.Target).
 		Info(msg.ToString())
+}
+
+func logFriendNotifyEvent(event client.INotifyEvent) {
 }
 
 func logFriendMessageRecallEvent(event *client.FriendMessageRecalledEvent) {
@@ -103,16 +181,6 @@ func logGroupMessageRecallEvent(event *client.GroupMessageRecalledEvent) {
 		Info("group message recall")
 }
 
-func logGroupMuteEvent(event *client.GroupMuteEvent) {
-	logger.
-		WithField("from", "GroupMute").
-		WithField("GroupCode", event.GroupCode).
-		WithField("OperatorID", event.OperatorUin).
-		WithField("TargetID", event.TargetUin).
-		WithField("MuteTime", event.Time).
-		Info("group mute")
-}
-
 func logDisconnect(event *client.ClientDisconnectedEvent) {
 	logger.
 		WithField("from", "Disconnected").
@@ -121,46 +189,39 @@ func logDisconnect(event *client.ClientDisconnectedEvent) {
 }
 
 func registerLog(b *bot.Bot) {
-	b.GroupMessageRecalledEvent.Subscribe(func(qqClient *client.QQClient, event *client.GroupMessageRecalledEvent) {
+	/*b.GroupMessageRecalledEvent.Subscribe(func(qqClient *client.QQClient, event *client.GroupMessageRecalledEvent) {
 		logGroupMessageRecallEvent(event)
-	})
-	// Deprecated: This function is designed to make the framework compatible with the old plug-in, and the newly developed plug-in should no longer use this method
-	//b.OnGroupMessageRecalled(func(qqClient *client.QQClient, event *client.GroupMessageRecalledEvent) {
-	//	logGroupMessageRecallEvent(event)
-	//})
+	})*/
 
 	b.GroupMessageEvent.Subscribe(func(qqClient *client.QQClient, groupMessage *message.GroupMessage) {
 		logGroupMessage(groupMessage)
 	})
-	//b.OnGroupMessage(func(qqClient *client.QQClient, groupMessage *message.GroupMessage) {
-	//	logGroupMessage(groupMessage)
-	//})
+
+	b.SelfGroupMessageEvent.Subscribe(func(qqClient *client.QQClient, groupMessage *message.GroupMessage) {
+		logGroupMessage(groupMessage)
+	})
 
 	b.GroupMuteEvent.Subscribe(func(qqClient *client.QQClient, event *client.GroupMuteEvent) {
 		logGroupMuteEvent(event)
 	})
-	//b.OnGroupMuted(func(qqClient *client.QQClient, event *client.GroupMuteEvent) {
-	//	logGroupMuteEvent(event)
-	//})
 
 	b.PrivateMessageEvent.Subscribe(func(qqClient *client.QQClient, privateMessage *message.PrivateMessage) {
-		logPrivateMessage(privateMessage)
+		//logPrivateMessage(privateMessage)
 	})
-	//b.OnPrivateMessage(func(qqClient *client.QQClient, privateMessage *message.PrivateMessage) {
-	//	logPrivateMessage(privateMessage)
-	//})
 
 	b.FriendMessageRecalledEvent.Subscribe(func(qqClient *client.QQClient, event *client.FriendMessageRecalledEvent) {
-		logFriendMessageRecallEvent(event)
+		//logFriendMessageRecallEvent(event)
 	})
-	//b.OnFriendMessageRecalled(func(qqClient *client.QQClient, event *client.FriendMessageRecalledEvent) {
-	//	logFriendMessageRecallEvent(event)
-	//})
 
 	b.DisconnectedEvent.Subscribe(func(qqClient *client.QQClient, event *client.ClientDisconnectedEvent) {
 		logDisconnect(event)
 	})
-	//b.OnDisconnected(func(qqClient *client.QQClient, event *client.ClientDisconnectedEvent) {
-	//	logDisconnect(event)
-	//})
+
+	b.GroupNotifyEvent.Subscribe(func(qqClient *client.QQClient, event client.INotifyEvent) {
+		logGroupNotifyEvent(event)
+	})
+
+	/*b.FriendNotifyEvent.Subscribe(func(qqClient *client.QQClient, event client.INotifyEvent) {
+		logFriendNotifyEvent(event)
+	})*/
 }

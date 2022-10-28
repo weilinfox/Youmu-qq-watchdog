@@ -17,19 +17,23 @@ func init() {
 }
 
 func main() {
+	// 使用协议
+	// 不同协议可能会有部分功能无法使用
+	// 在登陆前切换协议
+	bot.UseProtocol(bot.IPad)
+
 	// 快速初始化
 	bot.Init()
 
 	// 初始化 Modules
 	bot.StartService()
 
-	// 使用协议
-	// 不同协议可能会有部分功能无法使用
-	// 在登陆前切换协议
-	bot.UseProtocol(bot.AndroidPhone)
-
 	// 登录
-	bot.Login()
+	err := bot.Login()
+
+	if err == nil {
+		_ = os.WriteFile("session.token", bot.Instance.GenToken(), 0o644)
+	}
 
 	// 刷新好友列表，群列表
 	bot.RefreshList()
