@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"os/signal"
 
@@ -33,6 +34,9 @@ func main() {
 
 	if err == nil {
 		_ = os.WriteFile("session.token", bot.Instance.GenToken(), 0o644)
+	} else {
+		fmt.Println(err)
+		os.Exit(1)
 	}
 
 	// 刷新好友列表，群列表
