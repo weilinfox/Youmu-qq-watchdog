@@ -31,14 +31,23 @@ func (m *logging) Init() {
 	// 初始化过程
 	// 在此处可以进行 Module 的初始化配置
 	// 如配置读取
-	watchStringList := config.GlobalConfig.GetStringSlice("watch.group-list")
-	for _, i := range watchStringList {
+	groupStringList := config.GlobalConfig.GetStringSlice("watch.group-list")
+	userStringList := config.GlobalConfig.GetStringSlice("watch.qq-list")
+	for _, i := range groupStringList {
 		i64, e := strconv.ParseInt(i, 10, 64)
 		if e != nil {
-			logger.Warnf("Group Number " + i + " parse error: " + e.Error())
+			logger.Warnf("Group ID " + i + " parse error: " + e.Error())
 			continue
 		}
-		watchList = append(watchList, i64)
+		groupWatchList = append(groupWatchList, i64)
+	}
+	for _, i := range userStringList {
+		i64, e := strconv.ParseInt(i, 10, 64)
+		if e != nil {
+			logger.Warnf("User ID " + i + " parse error: " + e.Error())
+			continue
+		}
+		userWatchList = append(userWatchList, i64)
 	}
 }
 
@@ -70,21 +79,57 @@ func (m *logging) Stop(b *bot.Bot, wg *sync.WaitGroup) {
 	// 一般调用此函数时，程序接收到 os.Interrupt 信号
 	// 即将退出
 	// 在此处应该释放相应的资源或者对状态进行保存
+
+	// 吐出所有缓存私聊消息
+	for _, i := range userCache {
+		sender := i[0].Sender.CardName
+		if sender == "" {
+			sender = i[0].Sender.Nickname
+		}
+		for _, m := range i {
+			logger.
+				WithField("SenderID", m.Sender.Uin).
+				WithField("Target", m.Target).
+				Warnf("[%s 的缓存私聊]: %s", sender, m.ToString())
+		}
+	}
 }
 
 var instance *logging
 
 var logger = utils.GetModuleLogger("internal.logging")
 
+type userState int
+
+const (
+	appear userState = iota
+	forward
+	cache
+	ignore
+)
+
 var (
 	pokeCount = 3
 	pokeLast  int64
 
-	watchList []int64
+	groupWatchList []int64
+	userWatchList  []int64
+
+	userCache  = make(map[int64][]message.PrivateMessage)
+	userStates = make(map[int64]userState)
 )
 
 func isWatchGroup(g int64) bool {
-	for _, i := range watchList {
+	for _, i := range groupWatchList {
+		if i == g {
+			return true
+		}
+	}
+	return false
+}
+
+func isWatchUser(g int64) bool {
+	for _, i := range userWatchList {
 		if i == g {
 			return true
 		}
@@ -160,13 +205,96 @@ func logGroupMuteEvent(event *client.GroupMuteEvent) {
 }
 
 func logPrivateMessage(msg *message.PrivateMessage) {
+	if !isWatchUser(msg.Sender.Uin) {
+		// 非列表 自动battle
+		if state, e := userStates[msg.Sender.Uin]; e {
+			switch state {
+			case appear:
+				bot.Instance.MarkPrivateMessageReaded(msg.Sender.Uin, int64(msg.Time))
+
+				imp, e := strconv.ParseInt(msg.ToString(), 10, 64)
+				if e == nil {
+					// 重要级别
+					if imp > 5 {
+						// 切换实时转发
+						userStates[msg.Sender.Uin] = forward
+
+						sender := msg.Sender.CardName
+						if sender == "" {
+							sender = msg.Sender.Nickname
+						}
+						for _, i := range userCache[msg.Sender.Uin] {
+							logger.
+								WithField("SenderID", i.Sender.Uin).
+								WithField("Target", i.Target).
+								Warnf("[%s 的缓存私聊]: %s", sender, i.ToString())
+						}
+						delete(userCache, msg.Sender.Uin)
+					} else {
+						// 继续缓存
+						userStates[msg.Sender.Uin] = cache
+						userCache[msg.Sender.Uin] = append(userCache[msg.Sender.Uin], *msg)
+					}
+					bot.Instance.SendPrivateMessage(msg.Sender.Uin, &message.SendingMessage{
+						Elements: []message.IMessageElement{&message.TextElement{
+							Content: "[狐符-实践一号]\n" +
+								"判断完成",
+						}},
+					})
+				} else {
+					// 忽略
+					bot.Instance.SendPrivateMessage(msg.Sender.Uin, &message.SendingMessage{
+						Elements: []message.IMessageElement{&message.TextElement{
+							Content: "[狐符-实践一号]\n" +
+								"判断失败",
+						}},
+					})
+
+					userStates[msg.Sender.Uin] = ignore
+					delete(userCache, msg.Sender.Uin)
+				}
+				return
+			case cache:
+				bot.Instance.MarkPrivateMessageReaded(msg.Sender.Uin, int64(msg.Time))
+				userCache[msg.Sender.Uin] = append(userCache[msg.Sender.Uin], *msg)
+				return
+			case ignore:
+				bot.Instance.MarkPrivateMessageReaded(msg.Sender.Uin, int64(msg.Time))
+				return
+			case forward:
+			}
+		} else {
+			bot.Instance.MarkPrivateMessageReaded(msg.Sender.Uin, int64(msg.Time))
+
+			bot.Instance.SendPrivateMessage(msg.Sender.Uin, &message.SendingMessage{
+				Elements: []message.IMessageElement{&message.TextElement{
+					Content: "[狐符-实践一号]\n" +
+						"少女缓存中……",
+				}},
+			})
+			bot.Instance.SendPrivateMessage(msg.Sender.Uin, &message.SendingMessage{
+				Elements: []message.IMessageElement{&message.TextElement{
+					Content: "[狐符-实践一号]\n" +
+						"在此条消息后的第一条消息，回复 ∈ [0, 10] 的一个整数，作为消息重要性的参照（越大越紧急）\n" +
+						"狐符将以此为依据判断是否上报。",
+				}},
+			})
+
+			userStates[msg.Sender.Uin] = appear
+			userCache[msg.Sender.Uin] = []message.PrivateMessage{*msg}
+
+			return
+		}
+	}
+
+	sender := msg.Sender.CardName
+	if sender == "" {
+		sender = msg.Sender.Nickname
+	}
 	logger.
-		WithField("from", "PrivateMessage").
-		WithField("MessageID", msg.Id).
-		WithField("MessageIID", msg.InternalId).
 		WithField("SenderID", msg.Sender.Uin).
 		WithField("Target", msg.Target).
-		Info(msg.ToString())
+		Warnf("[%s 的私聊]: %s", sender, msg.ToString())
 }
 
 func logFriendNotifyEvent(event client.INotifyEvent) {
@@ -215,7 +343,7 @@ func registerLog(b *bot.Bot) {
 	})
 
 	b.PrivateMessageEvent.Subscribe(func(qqClient *client.QQClient, privateMessage *message.PrivateMessage) {
-		//logPrivateMessage(privateMessage)
+		logPrivateMessage(privateMessage)
 	})
 
 	b.FriendMessageRecalledEvent.Subscribe(func(qqClient *client.QQClient, event *client.FriendMessageRecalledEvent) {
