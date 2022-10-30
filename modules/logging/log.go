@@ -280,13 +280,13 @@ func logPrivateMessage(msg *message.PrivateMessage) {
 
 			bot.Instance.SendPrivateMessage(msg.Sender.Uin, &message.SendingMessage{
 				Elements: []message.IMessageElement{&message.TextElement{
-					Content: "[狐符-实践一号]\n" +
+					Content: "[狐符]\n" +
 						"少女缓存中……",
 				}},
 			})
 			bot.Instance.SendPrivateMessage(msg.Sender.Uin, &message.SendingMessage{
 				Elements: []message.IMessageElement{&message.TextElement{
-					Content: "[狐符-实践一号]\n" +
+					Content: "[狐符]\n" +
 						"在此条消息后的第一条消息，回复 ∈ [0, 10] 的一个整数，作为消息重要性的参照（越大越紧急）\n" +
 						"狐符将以此为依据判断是否上报。",
 				}},

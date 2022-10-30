@@ -3,7 +3,7 @@
 application.yaml*
 device.json*
 
-MiraiGo-Template
+youmu-qq-watchdog
 build/
 session.token*
 
