@@ -7,6 +7,7 @@ import (
 	"github.com/weilinfox/youmu-qq/config"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -197,12 +198,12 @@ func getUserName(user interface{}) string {
 	switch u := user.(type) {
 	case *message.Sender:
 		name = u.CardName
-		if name == "" {
+		if strings.Trim(name, " \t\n") == "" {
 			name = u.Nickname
 		}
 	case *client.GroupMemberInfo:
 		name = u.CardName
-		if name == "" {
+		if strings.Trim(name, " \t\n") == "" {
 			name = u.Nickname
 		}
 	}
