@@ -97,7 +97,7 @@ func (m *yooing) Start(b *bot.Bot) {
 						}
 					}
 					if info.LiveStatus == 1 && !ls {
-						msg := "[" + info.Title + "]\nhttps://live.bilibili.com/" + strconv.Itoa(b)
+						msg := "【" + info.Title + "-bilibili直播】\nhttps://live.bilibili.com/" + strconv.Itoa(b) + "?broadcast_type=0&is_room_feed=1"
 						bot.Instance.SendGroupMessage(q, &message.SendingMessage{
 							Elements: []message.IMessageElement{&message.TextElement{Content: msg}},
 						})
