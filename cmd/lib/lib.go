@@ -2,8 +2,8 @@ package lib
 
 import (
 	"fmt"
-	"github.com/weilinfox/youmu-qq-watchdog/bot"
-	"github.com/weilinfox/youmu-qq-watchdog/config"
+	"github.com/weilinfox/youmu-qq/bot"
+	"github.com/weilinfox/youmu-qq/config"
 	_ "golang.org/x/mobile/bind"
 )
 

@@ -18,8 +18,8 @@ import (
 
 	"github.com/Mrs4s/MiraiGo/client"
 	"github.com/sirupsen/logrus"
-	"github.com/weilinfox/youmu-qq-watchdog/config"
-	"github.com/weilinfox/youmu-qq-watchdog/utils"
+	"github.com/weilinfox/youmu-qq/config"
+	"github.com/weilinfox/youmu-qq/utils"
 )
 
 // Bot 全局 Bot

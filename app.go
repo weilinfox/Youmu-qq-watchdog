@@ -2,15 +2,15 @@ package main
 
 import (
 	"fmt"
-	"github.com/weilinfox/youmu-qq-watchdog/bot"
-	"github.com/weilinfox/youmu-qq-watchdog/config"
-	"github.com/weilinfox/youmu-qq-watchdog/utils"
+	"github.com/weilinfox/youmu-qq/bot"
+	"github.com/weilinfox/youmu-qq/config"
+	"github.com/weilinfox/youmu-qq/utils"
 	"os"
 	"os/signal"
 	"strconv"
 
-	_ "github.com/weilinfox/youmu-qq-watchdog/modules/logging"
-	_ "github.com/weilinfox/youmu-qq-watchdog/modules/yooing"
+	_ "github.com/weilinfox/youmu-qq/modules/logging"
+	_ "github.com/weilinfox/youmu-qq/modules/yooing"
 )
 
 func init() {

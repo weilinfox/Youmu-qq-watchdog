@@ -1,6 +1,6 @@
 # 桜風の狐符
 
-Youmu self-used QQ watchdog
+Youmu self-used QQ client
 
 This project is a fork of [MiraiGo-Template](https://github.com/Logiase/MiraiGo-Template), a template for [MiraiGo](https://github.com/Mrs4s/MiraiGo).
 

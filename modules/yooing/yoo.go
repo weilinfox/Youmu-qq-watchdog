@@ -12,9 +12,9 @@ import (
 	"time"
 
 	"github.com/CuteReimu/bilibili"
-	"github.com/weilinfox/youmu-qq-watchdog/bot"
-	"github.com/weilinfox/youmu-qq-watchdog/config"
-	"github.com/weilinfox/youmu-qq-watchdog/utils"
+	"github.com/weilinfox/youmu-qq/bot"
+	"github.com/weilinfox/youmu-qq/config"
+	"github.com/weilinfox/youmu-qq/utils"
 )
 
 func init() {

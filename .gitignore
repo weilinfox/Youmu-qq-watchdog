@@ -3,7 +3,7 @@
 application.yaml*
 device.json*
 
-youmu-qq-watchdog
+youmu-qq
 build/
 session.token*
 

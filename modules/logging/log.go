@@ -3,13 +3,13 @@ package logging
 import (
 	"github.com/Mrs4s/MiraiGo/client"
 	"github.com/Mrs4s/MiraiGo/message"
-	"github.com/weilinfox/youmu-qq-watchdog/config"
+	"github.com/weilinfox/youmu-qq/config"
 	"strconv"
 	"sync"
 	"time"
 
-	"github.com/weilinfox/youmu-qq-watchdog/bot"
-	"github.com/weilinfox/youmu-qq-watchdog/utils"
+	"github.com/weilinfox/youmu-qq/bot"
+	"github.com/weilinfox/youmu-qq/utils"
 )
 
 func init() {

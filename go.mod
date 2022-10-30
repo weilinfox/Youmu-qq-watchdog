@@ -1,4 +1,4 @@
-module github.com/weilinfox/youmu-qq-watchdog
+module github.com/weilinfox/youmu-qq
 
 go 1.18
 
