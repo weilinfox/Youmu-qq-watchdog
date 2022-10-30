@@ -1,13 +1,17 @@
 package main
 
 import (
-	"fmt"
+	"github.com/Mrs4s/MiraiGo/client"
 	"github.com/weilinfox/youmu-qq/bot"
 	"github.com/weilinfox/youmu-qq/config"
 	"github.com/weilinfox/youmu-qq/utils"
+	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"strconv"
+	"sync"
+	"time"
 
 	_ "github.com/weilinfox/youmu-qq/modules/logging"
 	_ "github.com/weilinfox/youmu-qq/modules/yooing"
@@ -36,8 +40,39 @@ func main() {
 	if err == nil {
 		_ = os.WriteFile("session.token", bot.Instance.GenToken(), 0o644)
 	} else {
-		panic(err)
+		log.Panicln(err)
 	}
+
+	// re login.
+	// It seems that it is useless
+	var reLoginLock sync.Mutex
+	bot.Instance.DisconnectedEvent.Subscribe(func(q *client.QQClient, e *client.ClientDisconnectedEvent) {
+		reLoginLock.Lock()
+		defer reLoginLock.Unlock()
+
+		log.Println("Waiting for re login")
+		for {
+			// check internet
+			resp, err := http.Get("https://tencent.com")
+			if err != nil {
+				time.Sleep(time.Second * 10)
+				continue
+			}
+			_ = resp.Body.Close()
+			break
+		}
+
+		log.Println("Try to login")
+		err = bot.Login()
+		if err != nil {
+			bot.Stop()
+			log.Panicln(err)
+		}
+
+		_ = os.WriteFile("session.token", bot.Instance.GenToken(), 0o644)
+		log.Println("Re login success")
+		bot.RefreshList()
+	})
 
 	// 刷新好友列表，群列表
 	bot.RefreshList()
@@ -57,7 +92,7 @@ func main() {
 		}
 		mem := group.FindMember(selfID)
 		oldGroupCard[g] = mem.CardName
-		fmt.Println(group.Name + ": " + mem.CardName + " -> " + newCard)
+		log.Println(group.Name + ": " + mem.CardName + " -> " + newCard)
 		mem.EditCard(newCard)
 	}
 
@@ -74,7 +109,7 @@ func main() {
 			continue
 		}
 		mem := group.FindMember(selfID)
-		fmt.Println(group.Name + ": " + newCard + " -> " + c)
+		log.Println(group.Name + ": " + newCard + " -> " + c)
 		mem.EditCard(c)
 	}
 
