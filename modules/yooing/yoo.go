@@ -95,14 +95,15 @@ func (m *yooing) Start(b *bot.Bot) {
 						} else {
 							logger.Infof("[bilibili]: %s 在摸19诶嘿", biliUserList[b])
 						}
-					}
-					if info.LiveStatus == 1 && !ls {
-						msg := "【" + info.Title + "-bilibili直播】\nhttps://live.bilibili.com/" + strconv.Itoa(b) + "?broadcast_type=0&is_room_feed=1"
-						bot.Instance.SendGroupMessage(q, &message.SendingMessage{
-							Elements: []message.IMessageElement{&message.TextElement{Content: msg}},
-						})
-					} else if info.LiveStatus == 0 && ls {
-						lastStatus[b] = false
+					} else {
+						if info.LiveStatus == 1 && !ls {
+							msg := "【" + info.Title + "-bilibili直播】\nhttps://live.bilibili.com/" + strconv.Itoa(b) + "?broadcast_type=0&is_room_feed=1"
+							bot.Instance.SendGroupMessage(q, &message.SendingMessage{
+								Elements: []message.IMessageElement{&message.TextElement{Content: msg}},
+							})
+						} else if info.LiveStatus == 0 && ls {
+							lastStatus[b] = false
+						}
 					}
 				}
 				time.Sleep(time.Second * time.Duration(rand.Intn(5)+5))
