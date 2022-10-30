@@ -2,12 +2,12 @@ package main
 
 import (
 	"fmt"
-	"os"
-	"os/signal"
-
 	"github.com/Logiase/MiraiGo-Template/bot"
 	"github.com/Logiase/MiraiGo-Template/config"
 	"github.com/Logiase/MiraiGo-Template/utils"
+	"os"
+	"os/signal"
+	"strconv"
 
 	_ "github.com/Logiase/MiraiGo-Template/modules/logging"
 )
@@ -42,8 +42,39 @@ func main() {
 	// 刷新好友列表，群列表
 	bot.RefreshList()
 
+	// 托管特殊群备注
+	oldGroupCard := make(map[int64]string)
+	selfID := config.GlobalConfig.GetInt64("bot.account")
+	newCard := "桜風の狐符"
+	for _, i := range config.GlobalConfig.GetStringSlice("watch.group-list") {
+		g, e := strconv.ParseInt(i, 10, 64)
+		if e != nil {
+			continue
+		}
+		group := bot.Instance.FindGroup(g)
+		if group == nil {
+			continue
+		}
+		mem := group.FindMember(selfID)
+		oldGroupCard[g] = mem.CardName
+		fmt.Println(group.Name + ": " + mem.CardName + " -> " + newCard)
+		mem.EditCard(newCard)
+	}
+
 	ch := make(chan os.Signal, 1)
 	signal.Notify(ch, os.Interrupt)
 	<-ch
+
+	// 恢复群备注
+	for i, c := range oldGroupCard {
+		group := bot.Instance.FindGroup(i)
+		if group == nil {
+			continue
+		}
+		mem := group.FindMember(selfID)
+		fmt.Println(group.Name + ": " + newCard + " -> " + c)
+		mem.EditCard(c)
+	}
+
 	bot.Stop()
 }
