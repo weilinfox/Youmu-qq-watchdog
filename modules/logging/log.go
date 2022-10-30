@@ -1,9 +1,11 @@
 package logging
 
 import (
+	"encoding/json"
 	"github.com/Mrs4s/MiraiGo/client"
 	"github.com/Mrs4s/MiraiGo/message"
 	"github.com/weilinfox/youmu-qq/config"
+	"os"
 	"strconv"
 	"sync"
 	"time"
@@ -47,6 +49,28 @@ func (m *logging) Init() {
 				continue
 			}
 			*int64List[i] = append(*int64List[i], i64)
+		}
+	}
+
+	// restore private message configure
+	file := "./logs/" + time.Now().Format("20060102") + ".json"
+	if e, _ := utils.FileExist(file); e {
+		var status userStateConfig
+		b, err := os.ReadFile(file)
+		if err != nil {
+			logger.WithError(err).Error("Read private message user status failed")
+		}
+		err = json.Unmarshal(b, &status)
+		if err != nil {
+			logger.WithError(err).Error("Recover private message user status failed")
+		}
+
+		for i, s := range status.Config {
+			i64, err := strconv.ParseInt(i, 10, 64)
+			if err != nil {
+				logger.WithError(err).Error("State ID " + i + " parse error: " + err.Error())
+			}
+			userStates[i64] = s
 		}
 	}
 }
@@ -93,6 +117,23 @@ func (m *logging) Stop(b *bot.Bot, wg *sync.WaitGroup) {
 				Warnf("[%s 的缓存私聊]: %s", sender, m.ToString())
 		}
 	}
+
+	// store private message configure
+	status := userStateConfig{
+		Config: make(map[string]userState),
+	}
+	for i, s := range userStates {
+		status.Config[strconv.FormatInt(i, 10)] = s
+	}
+	c, err := json.Marshal(status)
+	if err != nil {
+		logger.WithError(err).Error("Cover private message user status failed")
+	} else {
+		err = os.WriteFile("./logs/"+time.Now().Format("20060102")+".json", c, 0644)
+		if err != nil {
+			logger.WithError(err).Error("Write private message user status failed")
+		}
+	}
 }
 
 var instance *logging
@@ -119,6 +160,10 @@ var (
 	userCache  = make(map[int64][]message.PrivateMessage)
 	userStates = make(map[int64]userState)
 )
+
+type userStateConfig struct {
+	Config map[string]userState `json:"config"`
+}
 
 func isWatchGroup(g int64) bool {
 	for _, i := range groupWatchList {
