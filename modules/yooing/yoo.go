@@ -1,8 +1,12 @@
 package yooing
 
 import (
+	"encoding/json"
 	"github.com/Mrs4s/MiraiGo/message"
+	"io"
 	"math/rand"
+	"net/http"
+	"net/url"
 	"strconv"
 	"sync"
 	"time"
@@ -22,7 +26,8 @@ var (
 	instance *yooing
 	logger   = utils.GetModuleLogger("internal.yooing")
 
-	biliList = make(map[int]int64)
+	biliList     = make(map[int]int64)
+	biliUserList = make(map[int]string)
 )
 
 type yooing struct {
@@ -83,11 +88,12 @@ func (m *yooing) Start(b *bot.Bot) {
 				} else {
 					ls, e := lastStatus[b]
 					if !e {
+						biliUserList[b] = getBilibiliUserName(info.Uid)
 						lastStatus[b] = info.LiveStatus == 1
 						if lastStatus[b] {
-							logger.Infof("[bilibili]: %s 正在直播", info.Title)
+							logger.Infof("[bilibili]: %s 正在直播", biliUserList[b])
 						} else {
-							logger.Infof("[bilibili]: %s 在摸19诶嘿", info.Title)
+							logger.Infof("[bilibili]: %s 在摸19诶嘿", biliUserList[b])
 						}
 					}
 					if info.LiveStatus == 1 && !ls {
@@ -113,4 +119,44 @@ func (m *yooing) Stop(b *bot.Bot, wg *sync.WaitGroup) {
 	// 一般调用此函数时，程序接收到 os.Interrupt 信号
 	// 即将退出
 	// 在此处应该释放相应的资源或者对状态进行保存
+}
+
+func getBilibiliUserName(uid int) string {
+	type bilibiliUser struct {
+		Code    int    `json:"code"`
+		Message string `json:"message"`
+		Ttl     int    `json:"ttl"`
+		Data    struct {
+			Card struct {
+				Name string `json:"name"`
+			} `json:"card"`
+		} `json:"data"`
+	}
+
+	params := url.Values{"mid": {strconv.Itoa(uid)}, "photo": {"false"}}
+	resp, err := http.Get("https://api.bilibili.com/x/web-interface/card?" + params.Encode())
+	if err != nil {
+		logger.WithError(err).Warn("Get request failed")
+		return strconv.Itoa(uid)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		logger.WithError(err).Warn("Read response failed")
+		return strconv.Itoa(uid)
+	}
+
+	var user bilibiliUser
+	err = json.Unmarshal(body, &user)
+	if err != nil {
+		logger.WithError(err).Warn("Unmarshal response failed")
+		return strconv.Itoa(uid)
+	}
+	if user.Code != 0 {
+		logger.WithField("Code", user.Code).Warn("Get request error")
+		return strconv.Itoa(uid)
+	}
+
+	return user.Data.Card.Name
 }
