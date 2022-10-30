@@ -1,15 +1,15 @@
 package logging
 
 import (
-	"github.com/Logiase/MiraiGo-Template/config"
 	"github.com/Mrs4s/MiraiGo/client"
 	"github.com/Mrs4s/MiraiGo/message"
+	"github.com/weilinfox/youmu-qq-watchdog/config"
 	"strconv"
 	"sync"
 	"time"
 
-	"github.com/Logiase/MiraiGo-Template/bot"
-	"github.com/Logiase/MiraiGo-Template/utils"
+	"github.com/weilinfox/youmu-qq-watchdog/bot"
+	"github.com/weilinfox/youmu-qq-watchdog/utils"
 )
 
 func init() {

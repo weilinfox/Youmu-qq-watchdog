@@ -2,14 +2,15 @@ package main
 
 import (
 	"fmt"
-	"github.com/Logiase/MiraiGo-Template/bot"
-	"github.com/Logiase/MiraiGo-Template/config"
-	"github.com/Logiase/MiraiGo-Template/utils"
+	"github.com/weilinfox/youmu-qq-watchdog/bot"
+	"github.com/weilinfox/youmu-qq-watchdog/config"
+	"github.com/weilinfox/youmu-qq-watchdog/utils"
 	"os"
 	"os/signal"
 	"strconv"
 
-	_ "github.com/Logiase/MiraiGo-Template/modules/logging"
+	_ "github.com/weilinfox/youmu-qq-watchdog/modules/logging"
+	_ "github.com/weilinfox/youmu-qq-watchdog/modules/yooing"
 )
 
 func init() {
@@ -35,8 +36,7 @@ func main() {
 	if err == nil {
 		_ = os.WriteFile("session.token", bot.Instance.GenToken(), 0o644)
 	} else {
-		fmt.Println(err)
-		os.Exit(1)
+		panic(err)
 	}
 
 	// 刷新好友列表，群列表

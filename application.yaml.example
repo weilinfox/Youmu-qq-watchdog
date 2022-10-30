@@ -1,3 +1,4 @@
+# login-method: common, qrcode
 bot:
   login-method: common
   account: ""
@@ -10,3 +11,7 @@ watch:
     - "10000000"
   qq-list:
     - "10000000"
+
+# bilibili id : qq id
+bilibili:
+  watch: {'222272': '10000000'}

@@ -8,5 +8,6 @@ This project is a fork of [MiraiGo-Template](https://github.com/Logiase/MiraiGo-
 
 + Forward specific group messages and mark important group messages
 + If someone pokes me, I would poke it in response (don't entertain in important groups, haha)
-+ Change group card name after watch dog initialized.
++ Change group card name after watchdog initialized
 + An integrate bot to block unimportant private message (time is money, money is power)
++ Bilibili live announcement
