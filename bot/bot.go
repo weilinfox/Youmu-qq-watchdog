@@ -3,6 +3,7 @@ package bot
 import (
 	"bufio"
 	"bytes"
+	"encoding/base64"
 	"fmt"
 	"github.com/Mrs4s/MiraiGo/binary"
 	"github.com/pkg/errors"
@@ -71,8 +72,13 @@ func InitWithOption(option InitOption) error {
 
 func InitWithDeviceJSONContent(deviceJSONContent []byte) {
 	var account = config.GlobalConfig.GetInt64("bot.account")
-	var password = config.GlobalConfig.GetString("bot.password")
-	err := InitWithOption(InitOption{
+	var passwdBase64 = config.GlobalConfig.GetString("bot.password-base64")
+	b, err := base64.StdEncoding.DecodeString(passwdBase64)
+	if err != nil {
+		panic(err)
+	}
+	password := string(b)
+	err = InitWithOption(InitOption{
 		Account:           account,
 		Password:          password,
 		DeviceJSONContent: deviceJSONContent,

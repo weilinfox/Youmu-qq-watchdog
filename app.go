@@ -42,7 +42,7 @@ func main() {
 	// 刷新好友列表，群列表
 	bot.RefreshList()
 
-	// 托管特殊群备注
+	// change card name to 狐符
 	oldGroupCard := make(map[int64]string)
 	selfID := config.GlobalConfig.GetInt64("bot.account")
 	newCard := "桜風の狐符"
@@ -65,7 +65,7 @@ func main() {
 	signal.Notify(ch, os.Interrupt)
 	<-ch
 
-	// 恢复群备注
+	// recover card name
 	for i, c := range oldGroupCard {
 		group := bot.Instance.FindGroup(i)
 		if group == nil {
