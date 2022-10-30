@@ -242,12 +242,27 @@ func logGroupNotifyEvent(event client.INotifyEvent) {
 				pokeCount = 0
 				pokeLast = time.Now().Unix()
 			}
-			if pokeCount < 3 {
+			if pokeCount < 2 {
 				if group != nil {
 					member := group.FindMember(e.Sender)
 					member.Poke()
 					pokeCount++
 				}
+			} else if pokeCount == 2 {
+				bot.Instance.SendGroupMessage(e.GroupCode, &message.SendingMessage{
+					Elements: []message.IMessageElement{&message.GroupImageElement{
+						ImageId:   "988EA892525938442F24EE16BC726E1F.jpg",
+						FileId:    -1376696330,
+						Md5:       []byte{0x98, 0x8E, 0xA8, 0x92, 0x52, 0x59, 0x38, 0x44, 0x2F, 0x24, 0xEE, 0x16, 0xBC, 0x72, 0x6E, 0x1F},
+						Size:      2842,
+						ImageType: 0,
+						Width:     80,
+						Height:    80,
+						Url:       "https://gchat.qpic.cn/gchatpic_new/1/0-0-988EA892525938442F24EE16BC726E1F/0?term=2",
+						Flash:     false,
+					}},
+				})
+				pokeCount++
 			}
 		}
 	}
