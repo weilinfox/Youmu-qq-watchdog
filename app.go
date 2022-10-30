@@ -65,6 +65,8 @@ func main() {
 	signal.Notify(ch, os.Interrupt)
 	<-ch
 
+	// ↓ warn that code start here would not be run in debug mode
+
 	// recover card name
 	for i, c := range oldGroupCard {
 		group := bot.Instance.FindGroup(i)

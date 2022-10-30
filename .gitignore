@@ -1,9 +1,11 @@
 .idea/
 
-application.yaml
-device.json
+application.yaml*
+device.json*
 
 MiraiGo-Template
+build/
+session.token*
 
 logs/
 
