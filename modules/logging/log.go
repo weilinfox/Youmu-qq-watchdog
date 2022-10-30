@@ -31,23 +31,23 @@ func (m *logging) Init() {
 	// 初始化过程
 	// 在此处可以进行 Module 的初始化配置
 	// 如配置读取
-	groupStringList := config.GlobalConfig.GetStringSlice("watch.group-list")
-	userStringList := config.GlobalConfig.GetStringSlice("watch.qq-list")
-	for _, i := range groupStringList {
-		i64, e := strconv.ParseInt(i, 10, 64)
-		if e != nil {
-			logger.Warnf("Group ID " + i + " parse error: " + e.Error())
-			continue
-		}
-		groupWatchList = append(groupWatchList, i64)
+	stringList := [][]string{config.GlobalConfig.GetStringSlice("watch.group-list"),
+		config.GlobalConfig.GetStringSlice("watch.alarm-group-list"),
+		config.GlobalConfig.GetStringSlice("watch.qq-list")}
+	int64List := []*[]int64{
+		&groupWatchList,
+		&alarmGroupWatchList,
+		&userWatchList,
 	}
-	for _, i := range userStringList {
-		i64, e := strconv.ParseInt(i, 10, 64)
-		if e != nil {
-			logger.Warnf("User ID " + i + " parse error: " + e.Error())
-			continue
+	for i, s := range stringList {
+		for _, id := range s {
+			i64, e := strconv.ParseInt(id, 10, 64)
+			if e != nil {
+				logger.Warnf("ID " + id + " parse error: " + e.Error())
+				continue
+			}
+			*int64List[i] = append(*int64List[i], i64)
 		}
-		userWatchList = append(userWatchList, i64)
 	}
 }
 
@@ -112,8 +112,9 @@ var (
 	pokeCount = 3
 	pokeLast  int64
 
-	groupWatchList []int64
-	userWatchList  []int64
+	groupWatchList      []int64
+	alarmGroupWatchList []int64 // important groups
+	userWatchList       []int64
 
 	userCache  = make(map[int64][]message.PrivateMessage)
 	userStates = make(map[int64]userState)
@@ -121,6 +122,15 @@ var (
 
 func isWatchGroup(g int64) bool {
 	for _, i := range groupWatchList {
+		if i == g {
+			return true
+		}
+	}
+	return false
+}
+
+func isWatchAlarmGroup(g int64) bool {
+	for _, i := range alarmGroupWatchList {
 		if i == g {
 			return true
 		}
@@ -137,17 +147,33 @@ func isWatchUser(g int64) bool {
 	return false
 }
 
+func getUserName(user interface{}) string {
+	name := ""
+	switch u := user.(type) {
+	case *message.Sender:
+		name = u.CardName
+		if name == "" {
+			name = u.Nickname
+		}
+	case *client.GroupMemberInfo:
+		name = u.CardName
+		if name == "" {
+			name = u.Nickname
+		}
+	}
+	return name
+}
+
 func logGroupMessage(msg *message.GroupMessage) {
-	if !isWatchGroup(msg.GroupCode) {
-		return
+	if isWatchGroup(msg.GroupCode) {
+		logger.
+			WithField("MessageID", msg.Id).
+			Infof("[%s] %s: %s", msg.GroupName, getUserName(msg.Sender), msg.ToString())
+	} else if isWatchAlarmGroup(msg.GroupCode) {
+		logger.
+			WithField("MessageID", msg.Id).
+			Warnf("[%s] %s: %s", msg.GroupName, getUserName(msg.Sender), msg.ToString())
 	}
-	name := msg.Sender.CardName
-	if name == "" {
-		name = msg.Sender.Nickname
-	}
-	logger.
-		WithField("MessageID", msg.Id).
-		Infof("[%s] %s: %s", msg.GroupName, name, msg.ToString())
 }
 
 func logGroupNotifyEvent(event client.INotifyEvent) {
@@ -157,17 +183,12 @@ func logGroupNotifyEvent(event client.INotifyEvent) {
 			return
 		}
 		group := bot.Instance.FindGroup(e.GroupCode)
+		if group == nil {
+			return
+		}
 		sender := group.FindMember(e.Sender)
 		receiver := group.FindMember(e.Receiver)
-		senderName := sender.CardName
-		receiverName := receiver.CardName
-		if senderName == "" {
-			senderName = sender.Nickname
-		}
-		if receiverName == "" {
-			receiverName = receiver.Nickname
-		}
-		logger.Infof("[%s] %s 戳了戳 %s", group.Name, senderName, receiverName)
+		logger.Infof("[%s] %s 戳了戳 %s", group.Name, getUserName(sender), getUserName(receiver))
 
 		if e.Receiver == config.GlobalConfig.GetInt64("bot.account") {
 			// three auto poke per hour
@@ -191,17 +212,12 @@ func logGroupMuteEvent(event *client.GroupMuteEvent) {
 		return
 	}
 	group := bot.Instance.FindGroup(event.GroupCode)
+	if group == nil {
+		return
+	}
 	target := group.FindMember(event.TargetUin)
-	targetName := target.CardName
 	operator := group.FindMember(event.OperatorUin)
-	operatorName := operator.CardName
-	if targetName == "" {
-		targetName = target.Nickname
-	}
-	if operatorName == "" {
-		operatorName = operator.Nickname
-	}
-	logger.Infof("[%s] %s 被 %s 禁言 %dmin 惹", group.Name, targetName, operatorName, event.Time)
+	logger.Infof("[%s] %s 被 %s 禁言 %dmin 惹", group.Name, getUserName(target), getUserName(operator), event.Time)
 }
 
 func logPrivateMessage(msg *message.PrivateMessage) {
@@ -219,15 +235,11 @@ func logPrivateMessage(msg *message.PrivateMessage) {
 						// 切换实时转发
 						userStates[msg.Sender.Uin] = forward
 
-						sender := msg.Sender.CardName
-						if sender == "" {
-							sender = msg.Sender.Nickname
-						}
 						for _, i := range userCache[msg.Sender.Uin] {
 							logger.
 								WithField("SenderID", i.Sender.Uin).
 								WithField("Target", i.Target).
-								Warnf("[%s 的缓存私聊]: %s", sender, i.ToString())
+								Warnf("[%s 的缓存私聊]: %s", getUserName(msg.Sender), i.ToString())
 						}
 						delete(userCache, msg.Sender.Uin)
 					} else {
@@ -287,14 +299,10 @@ func logPrivateMessage(msg *message.PrivateMessage) {
 		}
 	}
 
-	sender := msg.Sender.CardName
-	if sender == "" {
-		sender = msg.Sender.Nickname
-	}
 	logger.
 		WithField("SenderID", msg.Sender.Uin).
 		WithField("Target", msg.Target).
-		Warnf("[%s 的私聊]: %s", sender, msg.ToString())
+		Warnf("[%s 的私聊]: %s", getUserName(msg.Sender), msg.ToString())
 }
 
 func logFriendNotifyEvent(event client.INotifyEvent) {

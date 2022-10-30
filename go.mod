@@ -4,7 +4,7 @@ go 1.17
 
 require (
 	github.com/Baozisoftware/qrcode-terminal-go v0.0.0-20170407111555-c0650d8dff0f
-	github.com/Mrs4s/MiraiGo v0.0.0-20220925082653-d3b8c5f700af
+	github.com/Mrs4s/MiraiGo v0.0.0-20221029131151-b291cf2896ff
 	github.com/lestrrat-go/file-rotatelogs v2.4.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5

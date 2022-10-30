@@ -6,5 +6,7 @@ bot:
 watch:
   group-list:
     - "10000000"
+  alarm-group-list:
+    - "10000000"
   qq-list:
     - "10000000"

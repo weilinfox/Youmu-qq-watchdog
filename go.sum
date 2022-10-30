@@ -61,6 +61,8 @@ github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym
 github.com/DataDog/datadog-go v3.2.0+incompatible/go.mod h1:LButxg5PwREeZtORoXG3tL4fMGNddJ+vMq1mwgfaqoQ=
 github.com/Mrs4s/MiraiGo v0.0.0-20220925082653-d3b8c5f700af h1:4xe+9ejyGT2LkFI9FTASqFGE5Xqbk53F9palO3sLFPw=
 github.com/Mrs4s/MiraiGo v0.0.0-20220925082653-d3b8c5f700af/go.mod h1:lecSP26qedhinCceWn1x02dLDxGotH5nTFlpIMilmVM=
+github.com/Mrs4s/MiraiGo v0.0.0-20221029131151-b291cf2896ff h1:3fjeoPtSwLU4ScAkNpeyo7Z2ibCSQ/O2wXzHsV0Y+04=
+github.com/Mrs4s/MiraiGo v0.0.0-20221029131151-b291cf2896ff/go.mod h1:lecSP26qedhinCceWn1x02dLDxGotH5nTFlpIMilmVM=
 github.com/OneOfOne/xxhash v1.2.2/go.mod h1:HSdplMjZKSmBqAxg5vPj2TmRDmfkzw+cTzAElWljhcU=
 github.com/RomiChan/protobuf v0.0.0-20220624030127-3310cba9dbc0/go.mod h1:2Ie+hdBFQpQFDHfeklgxoFmQRCE7O+KwFpISeXq7OwA=
 github.com/RomiChan/protobuf v0.1.1-0.20220602121309-9e3b8cbefd7a h1:WIfEWYj82oEuPtm5pqlyQmCJCoiw00C6ugZFqHA0cC8=
