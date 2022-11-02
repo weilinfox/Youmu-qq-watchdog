@@ -278,7 +278,7 @@ func logGroupMuteEvent(event *client.GroupMuteEvent) {
 	}
 	target := group.FindMember(event.TargetUin)
 	operator := group.FindMember(event.OperatorUin)
-	logger.Infof("[%s] %s 被 %s 禁言 %dmin 惹", group.Name, getUserName(target), getUserName(operator), event.Time)
+	logger.Infof("[%s] %s 被 %s 禁言 %ds 惹", group.Name, getUserName(target), getUserName(operator), event.Time)
 }
 
 func logPrivateMessage(msg *message.PrivateMessage) {
