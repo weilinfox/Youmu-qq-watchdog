@@ -310,7 +310,7 @@ func logPrivateMessage(msg *message.PrivateMessage) {
 					}
 					bot.Instance.SendPrivateMessage(msg.Sender.Uin, &message.SendingMessage{
 						Elements: []message.IMessageElement{&message.TextElement{
-							Content: "[狐符-实践一号]\n" +
+							Content: "[狐符]\n" +
 								"判断完成",
 						}},
 					})
@@ -318,7 +318,7 @@ func logPrivateMessage(msg *message.PrivateMessage) {
 					// 忽略
 					bot.Instance.SendPrivateMessage(msg.Sender.Uin, &message.SendingMessage{
 						Elements: []message.IMessageElement{&message.TextElement{
-							Content: "[狐符-实践一号]\n" +
+							Content: "[狐符]\n" +
 								"判断失败",
 						}},
 					})
