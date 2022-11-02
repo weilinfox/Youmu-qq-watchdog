@@ -87,9 +87,9 @@ func (m *yooing) Start(b *bot.Bot) {
 					logger.WithError(err).Warn("Get room info failed")
 				} else {
 					ls, e := lastStatus[b]
+					lastStatus[b] = info.LiveStatus == 1
 					if !e {
 						biliUserList[b] = getBilibiliUserName(info.Uid)
-						lastStatus[b] = info.LiveStatus == 1
 						if lastStatus[b] {
 							logger.Infof("[bilibili]: %s 正在直播", biliUserList[b])
 						} else {
@@ -101,13 +101,12 @@ func (m *yooing) Start(b *bot.Bot) {
 							bot.Instance.SendGroupMessage(q, &message.SendingMessage{
 								Elements: []message.IMessageElement{&message.TextElement{Content: msg}},
 							})
-						} else if info.LiveStatus == 0 && ls {
-							lastStatus[b] = false
 						}
 					}
 				}
-				time.Sleep(time.Second * time.Duration(rand.Intn(5)+5))
+				time.Sleep(time.Millisecond * time.Duration(rand.Intn(200)+300))
 			}
+			time.Sleep(time.Second * time.Duration(rand.Intn(5)+2))
 		}
 	}()
 
