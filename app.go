@@ -38,7 +38,7 @@ func main() {
 	err := bot.Login()
 
 	if err == nil {
-		_ = os.WriteFile("session.token", bot.Instance.GenToken(), 0o644)
+		bot.SaveToken()
 	} else {
 		log.Panicln(err)
 	}

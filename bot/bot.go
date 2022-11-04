@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/Mrs4s/MiraiGo/binary"
 	"github.com/pkg/errors"
+	"github.com/tidwall/gjson"
 	_ "image/png"
 	"os"
 	"strings"
@@ -17,6 +18,7 @@ import (
 	"github.com/tuotoo/qrcode"
 
 	"github.com/Mrs4s/MiraiGo/client"
+	miraiUtils "github.com/Mrs4s/MiraiGo/utils"
 	"github.com/sirupsen/logrus"
 	"github.com/weilinfox/youmu-qq/config"
 	"github.com/weilinfox/youmu-qq/utils"
@@ -295,7 +297,19 @@ func loginResponseProcessor(res *client.LoginResponse) error {
 		var text string
 		switch res.Error {
 		case client.SliderNeededError:
-			logger.Warnf("登录需要滑条验证码, 请使用手机QQ扫描二维码以继续登录.")
+			logger.Warnf("登录需要滑条验证码, 请选择验证方式: ")
+			logger.Warnf("1. 使用浏览器抓取滑条并登录")
+			logger.Warnf("2. 使用手机QQ扫码验证 (需要手Q和gocq在同一网络下).")
+			logger.Warn("请输入(1 - 2) (将在10秒后自动选择1)：")
+			text = readLineTimeout(time.Second*10, "1")
+			if strings.Contains(text, "1") {
+				ticket := getTicket(res.VerifyUrl)
+				if ticket == "" {
+					os.Exit(0)
+				}
+				res, err = Instance.SubmitTicket(ticket)
+				continue
+			}
 			Instance.Disconnect()
 			Instance.Release()
 			Instance.QQClient = client.NewClientEmpty()
@@ -345,8 +359,7 @@ func loginResponseProcessor(res *client.LoginResponse) error {
 			msg := res.ErrorMessage
 			if strings.Contains(msg, "版本") {
 				msg = "密码错误或账号被冻结"
-			}
-			if strings.Contains(msg, "冻结") {
+			} else if strings.Contains(msg, "冻结") {
 				logger.Fatalf("账号被冻结")
 			}
 			logger.Warnf("登录失败: %v", msg)
@@ -355,6 +368,43 @@ func loginResponseProcessor(res *client.LoginResponse) error {
 			os.Exit(0)
 		}
 	}
+}
+
+func getTicket(u string) (str string) {
+	id := miraiUtils.RandomString(8)
+	logger.Warnf("请前往该地址验证 -> %v <- 或输入手动抓取的 ticket：（Enter 提交）", strings.ReplaceAll(u, "https://ssl.captcha.qq.com/template/wireless_mqq_captcha.html?", fmt.Sprintf("https://captcha.go-cqhttp.org/captcha?id=%v&", id)))
+	manual := make(chan string, 1)
+	go func() {
+		manual <- readLine()
+	}()
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+	for count := 120; count > 0; count-- {
+		select {
+		case <-ticker.C:
+			str = fetchCaptcha(id)
+			if str != "" {
+				return
+			}
+		case str = <-manual:
+			return
+		}
+	}
+	logger.Warnf("验证超时")
+	return ""
+}
+
+func fetchCaptcha(id string) string {
+	data, err := utils.GetBytes("https://captcha.go-cqhttp.org/captcha/ticket?id=" + id)
+	if err != nil {
+		logger.Warnf("获取 Ticket 时出现错误: %v", err)
+		return ""
+	}
+	g := gjson.ParseBytes(data)
+	if g.Get("ticket").Exists() {
+		return g.Get("ticket").String()
+	}
+	return ""
 }
 
 // RefreshList 刷新联系人
