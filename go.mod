@@ -11,7 +11,7 @@ require (
 	github.com/rifflock/lfshook v0.0.0-20180920164130-b9218ef580f5
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/viper v1.13.0
-	github.com/tidwall/gjson v1.14.3
+	github.com/tidwall/gjson v1.14.4
 	github.com/tuotoo/qrcode v0.0.0-20190222102259-ac9c44189bf2
 	golang.org/x/mobile v0.0.0-20190719004257-d2bd2a29d028
 )
